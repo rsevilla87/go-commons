@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-
-	logger "github.com/sirupsen/logrus"
 )
 
 const local = "local"
@@ -54,14 +52,14 @@ func (l *Local) Index(documents []interface{}, opts IndexingOpts) {
 		metricName = fmt.Sprintf("%s.json", opts.MetricName)
 	}
 	filename := path.Join(l.metricsDirectory, metricName)
-	logger.Infof("Writing metric to: %s", filename)
+	log.Infof("Writing metric to: %s", filename)
 	f, err := os.Create(filename)
 	if err != nil {
-		logger.Errorf("Error creating metrics file %s: %s", filename, err)
+		log.Errorf("Error creating metrics file %s: %s", filename, err)
 	}
 	defer f.Close()
 	jsonEnc := json.NewEncoder(f)
 	if jsonEnc.Encode(documents); err != nil {
-		logger.Errorf("JSON encoding error: %s", err)
+		log.Errorf("JSON encoding error: %s", err)
 	}
 }

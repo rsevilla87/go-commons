@@ -19,7 +19,7 @@ const (
 	// Elastic indexer that sends metrics to the configured ES instance
 	ElasticIndexer IndexerType = "elastic"
 	// OpenSearch indexer that sends metrics to the configured Search Instance
-	OpenSearchIndexer IndexerType = "opensearch" 
+	OpenSearchIndexer IndexerType = "opensearch"
 	// Local indexer that writes metrics to local directory
 	LocalIndexer IndexerType = "local"
 )
@@ -59,4 +59,19 @@ type IndexerConfig struct {
 	CreateTarball bool `yaml:"createTarball"`
 	// TarBall name
 	TarballName string `yaml:"tarballName"`
+}
+
+type Logger interface {
+	Debug(args ...interface{})
+	Debugf(format string, args ...interface{})
+	Info(args ...interface{})
+	Infof(format string, args ...interface{})
+	Warn(args ...interface{})
+	Warnf(format string, args ...interface{})
+	Panic(args ...interface{})
+	Panicf(format string, args ...interface{})
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
 }

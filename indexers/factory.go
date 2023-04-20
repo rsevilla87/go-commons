@@ -16,19 +16,19 @@ package indexers
 
 import (
 	"fmt"
-
-	logger "github.com/sirupsen/logrus"
 )
 
 var indexerMap = make(map[IndexerType]Indexer)
+var log Logger
 
 // NewIndexer creates a new Indexer with the specified IndexerConfig
-func NewIndexer(indexerConfig IndexerConfig) (*Indexer, error) {
+func NewIndexer(indexerConfig IndexerConfig, logger Logger) (*Indexer, error) {
 	var indexer Indexer
 	var exists bool
+	log = logger
 	cfg := indexerConfig
 	if indexer, exists = indexerMap[cfg.Type]; exists {
-		logger.Infof("📁 Creating indexer: %s", cfg.Type)
+		log.Infof("📁 Creating indexer: %s", cfg.Type)
 		err := indexer.new(indexerConfig)
 		if err != nil {
 			return &indexer, err

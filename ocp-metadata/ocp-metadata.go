@@ -164,6 +164,10 @@ func (meta *Metadata) populateOpenShiftMetadata(metadata *ClusterMetadata) error
 			}
 		}
 	}
+	if infra.Status.ControlPlaneTopology == "External" {
+		metadata.MasterNodesType = ""
+		metadata.MasterNodesCount = 0
+	}
 	metadata.SDNType, err = meta.getSDNInfo()
 	if err != nil {
 		return err

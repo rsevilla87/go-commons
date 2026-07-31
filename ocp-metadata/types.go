@@ -133,9 +133,9 @@ type ClusterMetadata struct {
 	OCPVersion             string `json:"ocpVersion,omitempty"`
 	OCPMajorVersion        string `json:"ocpMajorVersion,omitempty"`
 	K8SVersion             string `json:"k8sVersion,omitempty"`
-	MasterNodesType        string `json:"masterNodesType,omitempty"`
+	MasterNodesType        string `json:"masterNodesType"`
 	WorkerNodesType        string `json:"workerNodesType,omitempty"`
-	MasterNodesCount       int    `json:"masterNodesCount,omitempty"`
+	MasterNodesCount       int    `json:"masterNodesCount"`
 	InfraNodesType         string `json:"infraNodesType,omitempty"`
 	WorkerNodesCount       int    `json:"workerNodesCount,omitempty"`
 	InfraNodesCount        int    `json:"infraNodesCount,omitempty"`

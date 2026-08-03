@@ -19,6 +19,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	api "github.com/prometheus/client_golang/api"
@@ -36,11 +38,32 @@ func (bat authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bat.token))
 	}
 
+	if bat.tokenFile != "" {
+		tokenBytes, err := os.ReadFile(bat.tokenFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read token file %s: %w", bat.tokenFile, err)
+		}
+		token := strings.TrimSpace(string(tokenBytes))
+		if token != "" {
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		}
+	}
+
 	return bat.Transport.RoundTrip(req)
 }
 
 // NewClient creates a prometheus struct instance with the given parameters
 func NewClient(url, token, username, password string, tlsSkipVerify bool) (*Prometheus, error) {
+	return newClient(url, token, "", username, password, tlsSkipVerify)
+}
+
+// NewClientWithTokenFile creates a prometheus client that re-reads the bearer
+// token from the given file on every request, allowing external token rotation.
+func NewClientWithTokenFile(url, tokenFile, username, password string, tlsSkipVerify bool) (*Prometheus, error) {
+	return newClient(url, "", tokenFile, username, password, tlsSkipVerify)
+}
+
+func newClient(url, token, tokenFile, username, password string, tlsSkipVerify bool) (*Prometheus, error) {
 	prometheus := Prometheus{
 		Endpoint: url,
 	}
@@ -49,6 +72,7 @@ func NewClient(url, token, username, password string, tlsSkipVerify bool) (*Prom
 		RoundTripper: authTransport{
 			Transport: &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: &tls.Config{InsecureSkipVerify: tlsSkipVerify}},
 			token:     token,
+			tokenFile: tokenFile,
 			username:  username,
 			password:  password,
 		},

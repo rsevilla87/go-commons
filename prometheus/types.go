@@ -43,6 +43,7 @@ type Prometheus struct {
 type authTransport struct {
 	Transport http.RoundTripper
 	token     string
+	tokenFile string
 	username  string
 	password  string
 }

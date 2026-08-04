@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -83,6 +84,80 @@ var _ = Describe("Tests for Prometheus", func() {
 			//Asserting no of times mocks are called
 			Expect(count).To(BeEquivalentTo(0))
 			Expect(err).To(BeNil())
+		})
+	})
+
+	Context("Tests for RoundTrip() with tokenFile", func() {
+		var tmpDir string
+		var tokenFilePath string
+		var noopTransport http.RoundTripper
+
+		BeforeEach(func() {
+			var err error
+			tmpDir, err = os.MkdirTemp("", "token-test-*")
+			Expect(err).NotTo(HaveOccurred())
+			tokenFilePath = tmpDir + "/token"
+			noopTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: 200}, nil
+			})
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(tmpDir)).To(Succeed())
+		})
+
+		It("reads token from file on each request", func() {
+			Expect(os.WriteFile(tokenFilePath, []byte("token-v1"), 0600)).To(Succeed())
+			bat := authTransport{tokenFile: tokenFilePath, Transport: noopTransport}
+
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err := bat.RoundTrip(req)
+			Expect(err).To(BeNil())
+			Expect(req.Header.Get("Authorization")).To(Equal("Bearer token-v1"))
+
+			Expect(os.WriteFile(tokenFilePath, []byte("token-v2"), 0600)).To(Succeed())
+			req2, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err = bat.RoundTrip(req2)
+			Expect(err).To(BeNil())
+			Expect(req2.Header.Get("Authorization")).To(Equal("Bearer token-v2"))
+		})
+
+		It("trims whitespace from token file contents", func() {
+			Expect(os.WriteFile(tokenFilePath, []byte("  my-token \n\n"), 0600)).To(Succeed())
+			bat := authTransport{tokenFile: tokenFilePath, Transport: noopTransport}
+
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err := bat.RoundTrip(req)
+			Expect(err).To(BeNil())
+			Expect(req.Header.Get("Authorization")).To(Equal("Bearer my-token"))
+		})
+
+		It("returns error when token file does not exist", func() {
+			bat := authTransport{tokenFile: "/nonexistent/token", Transport: noopTransport}
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err := bat.RoundTrip(req)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to read token file"))
+		})
+
+		It("does not set Authorization when token file is empty", func() {
+			Expect(os.WriteFile(tokenFilePath, []byte(""), 0600)).To(Succeed())
+			bat := authTransport{tokenFile: tokenFilePath, Transport: noopTransport}
+
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err := bat.RoundTrip(req)
+			Expect(err).To(BeNil())
+			Expect(req.Header.Get("Authorization")).To(Equal(""))
+		})
+
+		It("tokenFile takes precedence over static token", func() {
+			Expect(os.WriteFile(tokenFilePath, []byte("file-token"), 0600)).To(Succeed())
+			bat := authTransport{token: "static-token", tokenFile: tokenFilePath, Transport: noopTransport}
+
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+			_, err := bat.RoundTrip(req)
+			Expect(err).To(BeNil())
+			Expect(req.Header.Get("Authorization")).To(Equal("Bearer file-token"))
 		})
 	})
 
